@@ -1,0 +1,140 @@
+﻿@page "/articleForm"
+@page "/articleForm/{Code}"
+
+@using System.Text.Json
+@inject ArticleService ArticleService
+@inject ArticleCategoryService ArticleCategoryService
+<style>
+    .buttonStyle {
+        display: inline-flex;
+        margin-left: 10px;
+        background-color: #FFC107;
+    }
+</style>
+<h3 style="margin:20px;">新增商品</h3>
+<div>
+    <Card Bordered="true" Style="width: 70%">
+        <Form Model="@ArticleModel"
+              OnFinish="OnFinish"
+              OnFinishFailed="OnFinishFailed"
+              LabelCol="new ColLayoutParam { Span=6}"
+              WrapperCol="new ColLayoutParam { Span=12}" @ref="Form">
+            <FormItem Label="编号">
+                @if (IsInsert)
+                {
+                    <AntDesign.InputNumber @bind-Value="context.Code" />
+                }
+                else
+                {
+                    <AntDesign.InputNumber Disabled="true" @bind-Value="context.Code" />
+                }
+            </FormItem>
+            <FormItem Label="名称">
+                <Input @bind-Value="context.Name" />
+            </FormItem>
+            <FormItem Label="满足金额">
+                <AntDesign.InputNumber @bind-Value="context.AmountMet" />
+            </FormItem>
+            <FormItem Label="价格">
+                <AntDesign.InputNumber @bind-Value="context.Price" />
+            </FormItem>
+            <FormItem Label="类别">
+                <Cascader @bind-Value="context.ArticleCategoryId" Options="ArticleCategoryList" />
+            </FormItem>
+            <FormItem WrapperCol="new ColLayoutParam { Offset=6,Span=12}">
+                <AntDesign.Button HtmlType="submit" Class="buttonStyle">
+                    新增
+                </AntDesign.Button>
+            </FormItem>
+        </Form>
+    </Card>
+</div>
+@if (result != null)
+{
+    @if (result.Status == ActionStatus.OK)
+    {
+        <Alert Type="@AlertType.Success"
+               Message="成功"
+               Description="@result.Msg"
+               ShowIcon Closable="true" />
+    }
+    @if (result.Status == ActionStatus.Failed)
+    {
+        <Alert Type="@AlertType.Error"
+               Message="失败"
+               Description="@result.Msg"
+               ShowIcon Closable="true" Style="position:absolute;margin-top:-300px;" OnClose="OnClose" />
+    }
+}
+
+@code {
+    [Parameter]
+    public string Code { get; set; }
+    //public class Model
+    //{
+    //    public string Username { get; set; }
+    //    public string Password { get; set; }
+    //    public bool RememberMe { get; set; } = true;
+    //}
+    private Form<ArticleModel> Form;
+    private ActionResult result;
+    private bool IsInsert = true;
+    private ArticleModel ArticleModel = new ArticleModel();
+    private List<ArticleCategory> Categories;
+    private List<CascaderNode> ArticleCategoryList = new List<CascaderNode>();
+    //private ILog Log = LogManager.GetLogger("ArticleForm");
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(Code))
+        {
+            var article = await ArticleService.GetArticleByCodeAsync(Convert.ToInt32(Code));
+            ArticleModel.Code = article.Code;
+            ArticleModel.Name = article.Description;
+            ArticleModel.AmountMet = article.AmountMet;
+            ArticleModel.Price = article.Price;
+            ArticleModel.ArticleCategoryId = article.ArticleCategoryId.ToString();
+            IsInsert = false;
+        }
+        Categories = await ArticleCategoryService.GetCategoriesAsync();
+        if (Categories.Any())
+        {
+            foreach (var c in Categories)
+            {
+                ArticleCategoryList.Add(new CascaderNode()
+                {
+                    Value = c.Id.ToString(),
+                    Label = c.Description
+                });
+            }
+        }
+    }
+
+    private async Task OnFinish(EditContext editContext)
+    {
+        if (IsInsert)
+        {
+            result = await ArticleService.InsertArticleAsync(ArticleModel);
+        }
+        else
+        {
+
+            result = await ArticleService.UpdateArticleAsync(ArticleModel);
+        }
+        if (result.Status == ActionStatus.OK)
+        {
+            NavigationManager.NavigateTo("articles");
+        }
+        //Log.Info("新增商品" + Food.Code);
+        //Console.WriteLine($"Success:{JsonSerializer.Serialize(Food)}");
+    }
+    private void OnClose()
+    {
+        result = null;
+    }
+
+    private void OnFinishFailed(EditContext editContext)
+    {
+        //Console.WriteLine($"Failed:{JsonSerializer.Serialize(ArticleModel)}");
+    }
+}
+

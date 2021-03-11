@@ -1,0 +1,100 @@
+﻿@page "/costs"
+@page "/costs/{txtValue}"
+@inject CostService CostService
+<style>
+    .buttonStyle {
+        display: inline-flex;
+        margin-left: 10px;
+        background-color: #FFC107;
+    }
+</style>
+<h3 style="margin:10px;">成本记录表</h3>
+<div>
+    <Button Class="buttonStyle" Style="float:left" Icon="plus" OnClick="AddArticleCategory">增加</Button>
+    <Button Danger Style="float:left;margin-left: 10px;display: inline-flex;" Icon="delete" OnClick="MultiDeleteArticle">批量删除</Button>
+    <Search Style="float:right;width:25%" Placeholder="input search text" @bind-Value="@txtValue" EnterButton="true" OnPressEnter="OnSearch" OnSearch="OnSearch" />
+</div>
+<div>
+    <AntDesign.Table TItem="CostModel"
+                     DataSource="@ModelList"
+                     Total="_total"
+                     @bind-PageIndex="_pageIndex"
+                     @bind-PageSize="_pageSize"
+                     @bind-SelectedRows="selectedRows">
+        <Selection Key="@(context.Id.ToString())" />
+        <Column Title="序号" @bind-Field="@context.Id" Sortable />
+        <Column Title="成本日期" @bind-Field="@context.Cost_Date" Sortable />
+        <Column Title="成本描述" @bind-Field="@context.Cost_Description" Sortable />
+        <Column Title="成本价格" @bind-Field="@context.Cost_Price" Sortable />
+        <ActionColumn>
+            <Space>
+                <SpaceItem><Button Class="buttonStyle" OnClick="()=>Modify(context.Id)">修改</Button></SpaceItem>
+            </Space>
+            <Space>
+                <SpaceItem><Button Danger OnClick="()=>Delete(context.Id)">删除</Button></SpaceItem>
+            </Space>
+        </ActionColumn>
+    </AntDesign.Table>
+</div>
+<br />
+<p> 每页数量: @_pageSize | 总计: @_total</p>
+@code {
+    [Parameter]
+    public string txtValue { get; set; }
+    private List<CostModel> ModelList = new List<CostModel>();
+    IEnumerable<CostModel> selectedRows;
+    int _pageIndex = 1;
+    int _pageSize = 10;
+    int _total = 0;
+    protected override async Task OnInitializedAsync()
+    {
+        var costs = await CostService.GetCostsAsync();
+        if (costs == null)
+            return;
+        ModelList = costs.Select(a => new CostModel
+        {
+            Id = a.Id,
+            Cost_Date=a.Cost_Date,
+            Cost_Description=a.Cost_Description,
+            Cost_Price=a.Cost_Price,
+        }).ToList();
+        if (!string.IsNullOrWhiteSpace(txtValue))
+        {
+            if (ModelList != null)
+            {
+                ModelList = ModelList.Where(a => a.Id.ToString().Contains(txtValue) || a.Cost_Description.Contains(txtValue)||a.Cost_Date.ToString().Contains(txtValue)||a.Cost_Price.ToString().Contains(txtValue)).ToList();
+            }
+        }
+        _total = ModelList.Count;
+    }
+    private async Task Delete(int id)
+    {
+        ModelList = ModelList.Where(x => x.Id != id).ToList();
+        await CostService.DeleteCostById(id);
+        _total = ModelList.Count;
+    }
+    private void Modify(int id)
+    {
+        string navTo = "/costForm/" + id.ToString();
+        NavigationManager.NavigateTo(navTo.Trim());
+    }
+    private void AddArticleCategory()
+    {
+        NavigationManager.NavigateTo("costForm");
+    }
+    private async Task MultiDeleteArticle()
+    {
+        if (selectedRows.Count() != 0)
+        {
+            List<int> costIds = selectedRows.Select(s => s.Id).ToList();
+            await CostService.MultiDeleteCostByIds(costIds);
+            _total = ModelList.Count;
+            ModelList = ModelList.Where(c => !costIds.Contains(c.Id)).ToList();
+        }
+    }
+    public void OnSearch()
+    {
+        NavigationManager.NavigateTo("costs/" + txtValue, true);
+    }
+}
+

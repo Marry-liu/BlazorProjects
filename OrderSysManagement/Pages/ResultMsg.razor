@@ -1,0 +1,33 @@
+﻿@page "/resultMsg"
+@if (Result != null)
+{
+    @if (Result.Status == ActionStatus.OK)
+    {
+        <Alert Type="@AlertType.Success"
+               Message="成功"
+               Description="@Result.Msg"
+               ShowIcon Closable="true" />
+    }
+    @if (Result.Status == ActionStatus.Failed)
+    {
+        <Alert Type="@AlertType.Error"
+               Message="失败"
+               Description="@Result.Msg"
+               ShowIcon Closable="true" Style="position:absolute;margin-top:-300px;" OnClose="OnClose" />
+    }
+}
+
+@code {
+    [Parameter]
+    public ActionResult Result { get; set; }
+
+    public void SetResult(ActionResult result)
+    {
+        Result = result;
+    }
+    private void OnClose()
+    {
+        Result = null;
+        //NavigationManager.NavigateTo("")
+    }
+}

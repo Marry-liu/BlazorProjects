@@ -1,0 +1,211 @@
+﻿@page "/menuTemplate/{TransNum}"
+@using System.Text
+@inject ArticleService ArticleService
+@inject TransactionService TransactionService
+@inject ArticleCategoryService ArticleCategoryService
+@inject PrintJobService PrintJob
+<style>
+    .buttonStyle {
+        display: inline-flex;
+        margin-left: 10px;
+        background-color: #FFC107;
+        font-size: 18px;
+    }
+
+    .columnStyle {
+        font-size: 18px;
+    }
+</style>
+
+<div>
+    <h3 style="font-weight:bold;">
+        桌号 @TransNum
+        <Button Class="buttonStyle" Size="large" Icon="arrow-left" OnClick="@Return">返回</Button>
+    </h3>
+</div>
+<div Style="float:left;width:60%;">
+    <Card Style="background-color:#ebe4b6;height:500px;" Bordered="true">
+        <Body>
+            <Title Style="font-size:26px;text-align:center;vertical-align:central;padding:0px;">销售列表</Title>
+            <Table TItem="ArticleModel" DataSource="@Transaction.ArticleModels" Footer="@Footer" Class="columnStyle" @bind-PageSize="_pageSize">
+                <Column Title="名称" @bind-Field="@context.Name"></Column>
+                <Column Title="数量" @bind-Field="@context.Number"></Column>
+                <Column Title="单价/折扣金额(百分比)" @bind-Field="@context.Price"></Column>
+                <Column Title="总价" @bind-Field="@context.TotalPrice"></Column>
+                <ActionColumn>
+                    <Space>
+                        <SpaceItem><Button Type="primary" Icon="plus" Style="background-color:#6cbbd9" OnClick="()=>OrderFood(context.Code)"></Button></SpaceItem>
+                    </Space>
+                    <Space>
+                        <SpaceItem><Button Type="primary" style="background-color:#cd3e15" Icon="minus" OnClick="()=>Deduct(context.Code)"></Button></SpaceItem>
+                    </Space>
+                </ActionColumn>
+            </Table>
+        </Body>
+    </Card>
+    <ResultMsg Result="resultMsg.Result" @ref="resultMsg" />
+
+    <Button Class="buttonStyle" Size="large" Icon="printer" OnClick="@PrintBill">打印小票</Button>
+    <Button Class="buttonStyle" Size="large" Icon="money-collect" OnClick="@CheckOut">结 账</Button>
+</div>
+<div>
+    <div>
+        <AntDesign.RadioGroup Size="large" Class="columnStyle" @bind-Value="radioValue" ButtonStyle="solid" Style="padding-left:20px;">
+            @foreach (var category in Categories)
+            {
+                <Radio RadioButton Value="@category.Description">@category.Description</Radio>
+            }
+        </AntDesign.RadioGroup>
+    </div>
+    <CardGrid Style="width:40%; padding-left:20px;padding-top:10px;">
+        @foreach (var food in ArticleButtonList)
+        {
+            @if (food.ArticleCategory.Description == radioValue)
+            {
+                <button class="btn btn-warning" style="width:100px;height:80px;margin:3px;font-size:18px;" @onclick="(()=>OrderFood(food.Code))">@food.Description</button>
+            }
+        }
+    </CardGrid>
+</div>
+
+
+
+
+
+@code {
+    [Parameter]
+    public string TransNum { get; set; }
+    private List<Article> ArticleButtonList = new List<Article>();
+    private List<ArticleModel> FoodList = new List<ArticleModel>();
+    private TransationModel Transaction { get; set; }
+    private List<ArticleCategory> Categories = new List<ArticleCategory>();
+    private decimal? TotalPriceOfTransation;
+    private string Footer;
+    int _pageSize = 5;
+    public ResultMsg resultMsg =new ResultMsg();
+    protected override async Task OnInitializedAsync()
+    {
+        Transaction = TransactionService.transactionList.FirstOrDefault(t => t.TableNum == TransNum);
+        if (Transaction == null)
+        {
+            Transaction = new TransationModel();
+            Transaction.TableNum = TransNum;
+            Transaction.ArticleModels = new List<ArticleModel>();
+            TransactionService.transactionList.Add(Transaction);
+        }
+        ArticleButtonList = await ArticleService.GetArticlesAsync();
+        FoodList = ArticleButtonList.Select(a => new ArticleModel
+        {
+            Code = a.Code,
+            Name = a.Description,
+            AmountMet = a.AmountMet,
+            Price = a.Price,
+            ArticleCategoryId = a.ArticleCategoryId.ToString(),
+            ArticleCategoryName = a.ArticleCategory.Description
+        }).ToList();
+        Categories = await ArticleCategoryService.GetCategoriesAsync();
+        GetTotalPriceOfTransation();
+    }
+
+    public string radioValue = "主食";
+
+    public void OrderFood(int foodCode)
+    {
+        var food = Transaction.ArticleModels.FirstOrDefault(a => a.Code == foodCode);
+        if (food == null)
+        {
+            food = FoodList.First(a => a.Code == foodCode);
+            food.Number = 0;
+            if (food.Price < 0 && GetTotalPriceOfTransation() < food.AmountMet)
+            {
+
+                resultMsg.SetResult(new ActionResult
+                {
+                    Status = ActionStatus.Failed,
+                    Msg = "金额不满足折扣条件：" + food.Name
+                });
+                return;
+            }
+            Transaction.ArticleModels.Add(food);
+        }
+        if (food.ArticleCategoryName == "百分比折扣")
+        {
+            food.Number = 1;
+        }
+        else
+        {
+            food.Number = food.Number + 1;
+            food.TotalPrice = food.Number * food.Price;
+        }
+        GetTotalPriceOfTransation();
+    }
+    public void PrintBill()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.Append("     餐饮管理系统  \n");
+        //40
+        sb.Append("****************************************\n");
+        string a = ("商品名").PadRight(20, ' ') + ("价格").PadRight(20, ' ') + "\n";
+        sb.Append(a);
+        foreach (var f in Transaction.ArticleModels)
+        {
+            string text = f.Name.PadRight(20, ' ') + f.Price.ToString().PadRight(20, ' ') + "\n";
+            sb.Append(text);
+        }
+        sb.Append("*************************************\n");
+        PrintJob.Print(sb.ToString());
+    }
+    private void CheckOut()
+    {
+        Transaction.TransNum = TransactionService.GetMaxTransNum() + 1;
+        TransactionService.InsertTransaction(Transaction);
+        TransactionService.transactionList.Remove(Transaction);
+        Transaction = new TransationModel();
+        Transaction.ArticleModels = new List<ArticleModel>();
+        Transaction.TableNum = TransNum;
+        TransactionService.transactionList.Add(Transaction);
+        GetTotalPriceOfTransation();
+    }
+    private void Return()
+    {
+        NavigationManager.NavigateTo("/tables");
+    }
+    private void Deduct(int? code)
+    {
+        var food = Transaction.ArticleModels.First(f => f.Code == code);
+        food.Number = food.Number - 1;
+        food.TotalPrice = food.Number * food.Price;
+        if (food.Number == 0)
+        {
+            Transaction.ArticleModels.Remove(food);
+        }
+        GetTotalPriceOfTransation();
+    }
+    //private void Add(int? code)
+    //{
+    //    var food = Transaction.ArticleModels.First(f => f.Code == code);
+    //    food.Number = food.Number + 1;
+    //    food.TotalPrice = food.Number * food.Price;
+    //    GetTotalPriceOfTransation();
+    //}
+    private decimal? GetTotalPriceOfTransation()
+    {
+        if (Transaction.ArticleModels.Any())
+        {
+            TotalPriceOfTransation = Transaction.ArticleModels.Where(f => f.ArticleCategoryName != "百分比折扣").Sum(f => f.TotalPrice);
+            var percentDiscountArticle = Transaction.ArticleModels.FirstOrDefault(f => f.ArticleCategoryName == "百分比折扣");
+            if (percentDiscountArticle != null)
+            {
+                percentDiscountArticle.TotalPrice =Math.Round(Convert.ToDecimal(TotalPriceOfTransation * percentDiscountArticle.Price),3);
+                TotalPriceOfTransation += percentDiscountArticle.TotalPrice;
+            }
+            Footer = "总金额：" + Convert.ToString(TotalPriceOfTransation);
+            return TotalPriceOfTransation;
+        }
+        else
+        {
+            Footer = null;
+            return 0;
+        }
+    }
+}

@@ -1,0 +1,74 @@
+﻿@page "/setting"
+@inject PrintJobService PrintJobService
+<h3 style="margin:10px;">打印机参数设置</h3>
+<style>
+    .buttonStyle {
+        display: inline-flex;
+        margin-left: 10px;
+        background-color: #FFC107;
+    }
+</style>
+<div>
+    <Card Bordered="true" Style="width: 70%">
+        <Form Model="@Model"
+              OnFinish="OnFinish"
+              OnFinishFailed="OnFinishFailed"
+              LabelCol="new ColLayoutParam { Span=6}"
+              WrapperCol="new ColLayoutParam { Span=12}" @ref="Form">
+            <FormItem Label="打印机名称">
+                <Input @bind-Value="context.PrinterName" />
+            </FormItem>
+            <FormItem WrapperCol="new ColLayoutParam { Offset=6,Span=12}">
+                <AntDesign.Button HtmlType="submit" Class="buttonStyle">
+                    确定
+                </AntDesign.Button>
+            </FormItem>
+        </Form>
+    </Card>
+</div>
+@if (result != null)
+{
+    @if (result.Status == ActionStatus.OK)
+    {
+        <Alert Type="@AlertType.Success"
+               Message="成功"
+               Description="@result.Msg"
+               ShowIcon Closable="true" />
+    }
+    @if (result.Status == ActionStatus.Failed)
+    {
+        <Alert Type="@AlertType.Error"
+               Message="失败"
+               Description="@result.Msg"
+               ShowIcon Closable="true" Style="position:absolute;margin-top:-300px;" OnClose="OnClose" />
+    }
+}
+@code {
+    private Form<PrintParameterModel> Form;
+    private ActionResult result;
+    private PrintParameterModel Model = new PrintParameterModel();
+    protected override void OnInitialized()
+    {
+        Model.PrinterName = PrintJobService.PrinterName;
+        base.OnInitialized();
+    }
+    private async Task OnFinish(EditContext editContext)
+    {
+        result = await PrintJobService.UpdatePrintParameterAsync(Model);
+        if (result.Status == ActionStatus.OK)
+        {
+            NavigationManager.NavigateTo("articles");
+        }
+        //Log.Info("新增商品" + Food.Code);
+        //Console.WriteLine($"Success:{JsonSerializer.Serialize(Food)}");
+    }
+    private void OnClose()
+    {
+        result = null;
+    }
+
+    private void OnFinishFailed(EditContext editContext)
+    {
+        //Console.WriteLine($"Failed:{JsonSerializer.Serialize(ArticleModel)}");
+    }
+}

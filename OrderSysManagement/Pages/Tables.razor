@@ -1,0 +1,48 @@
+﻿@page "/tables"
+@inject TransactionService TransactionService
+<h3>桌子表Tables</h3>
+
+<div>
+    @foreach (var table in TableCommentList)
+    {
+        <button class="btn btn-warning" style="width:150px;margin:10px;" @onclick="(()=>ClickTable(table.TableNum))">
+            桌号 @table.TableNum
+            <br />
+            @if (!string.IsNullOrEmpty(table.Comment))
+            {
+                <span>@table.Comment</span>
+            }
+        </button>
+    }
+</div>
+
+@code {
+    public List<TableComment> TableCommentList;
+    protected override void OnInitialized()
+    {
+        TableCommentList = new List<TableComment>();
+        TableCommentList.Add(new TableComment { TableNum = 1, Comment = null });
+        TableCommentList.Add(new TableComment { TableNum = 2, Comment = null });
+        foreach (var table in TableCommentList)
+        {
+            TransationModel transaction = TransactionService.transactionList.FirstOrDefault(a => Convert.ToInt32(a.TableNum) == table.TableNum);
+            if (transaction != null)
+            {
+                decimal? total = 0;
+                foreach (ArticleModel f in transaction.ArticleModels)
+                {
+                    total = total + f.TotalPrice;
+                }
+                if (total != 0)
+                {
+                    table.Comment = "未结账,金额为：" + total.ToString();
+                }
+            }
+        }
+    }
+    public void ClickTable(int i)
+    {
+        string NaTo = "/menuTemplate/ " + i.ToString();
+        NavigationManager.NavigateTo(NaTo.Trim());
+    }
+}
