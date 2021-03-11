@@ -1,0 +1,101 @@
+﻿@page "/costForm"
+@page "/costForm/{Id}"
+
+@using System.Text.Json
+@inject CostService CostService
+<style>
+    .buttonStyle {
+        display: inline-flex;
+        margin-left: 10px;
+        background-color: #FFC107;
+    }
+</style>
+<h3 style="margin:20px;">成本记录</h3>
+<div>
+    <Card Bordered="true" Style="width: 70%">
+        <Form Model="@CostModel"
+              OnFinish="OnFinish"
+              OnFinishFailed="OnFinishFailed"
+              LabelCol="new ColLayoutParam { Span=6}"
+              WrapperCol="new ColLayoutParam { Span=12}" @ref="Form">
+            <FormItem Label="成本日期">
+                <InputDate @bind-Value="context.Cost_Date" />
+            </FormItem>
+            <FormItem Label="成本描述">
+                <AntDesign.Input @bind-Value="context.Cost_Description" />
+            </FormItem>
+            <FormItem Label="所花成本价格">
+                <AntDesign.InputNumber @bind-Value="context.Cost_Price" />
+            </FormItem>
+            <FormItem WrapperCol="new ColLayoutParam { Offset=6,Span=12}">
+                <AntDesign.Button HtmlType="submit" Class="buttonStyle">
+                    新增
+                </AntDesign.Button>
+            </FormItem>
+        </Form>
+    </Card>
+</div>
+@if (result != null)
+{
+    @if (result.Status == ActionStatus.OK)
+    {
+        <Alert Type="@AlertType.Success"
+               Message="成功"
+               Description="@result.Msg"
+               ShowIcon Closable="true" />
+    }
+    @if (result.Status == ActionStatus.Failed)
+    {
+        <Alert Type="@AlertType.Error"
+               Message="失败"
+               Description="@result.Msg"
+               ShowIcon Closable="true" Style="position:absolute;margin-top:-300px;" OnClose="OnClose" />
+    }
+}
+@code {
+    [Parameter]
+    public string Id { get; set; }
+
+    private Form<CostModel> Form;
+    private ActionResult result;
+    private bool IsInsert = true;
+    private CostModel CostModel = new CostModel();
+    private List<ArticleCategory> Categories;
+    private List<CascaderNode> ArticleCategoryList = new List<CascaderNode>();
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(Id))
+        {
+            var cost = await CostService.GetCostByIdAsync(Convert.ToInt32(Id));
+            IsInsert = false;
+        }
+    }
+
+    private async Task OnFinish(EditContext editContext)
+    {
+        if (IsInsert)
+        {
+            result = await CostService.InsertCostAsync(CostModel);
+        }
+        else
+        {
+
+            result = await CostService.UpdateCostAsync(CostModel);
+        }
+        if (result.Status == ActionStatus.OK)
+        {
+            NavigationManager.NavigateTo("costs");
+        }
+        //Log.Info("新增商品" + Food.Code);
+        //Console.WriteLine($"Success:{JsonSerializer.Serialize(Food)}");
+    }
+    private void OnClose()
+    {
+        result = null;
+    }
+
+    private void OnFinishFailed(EditContext editContext)
+    {
+        //Console.WriteLine($"Failed:{JsonSerializer.Serialize(ArticleModel)}");
+    }
+}

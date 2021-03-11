@@ -1,0 +1,136 @@
+﻿@page "/articles/"
+@page "/articles/{txtValue}"
+@inject ArticleService ArticleService
+<style>
+    .buttonStyle {
+        display: inline-flex;
+        margin-left: 10px;
+        background-color: #FFC107;
+    }
+</style>
+<h3 style="margin:10px;">商品表</h3>
+<div>
+    <Button Class="buttonStyle" Style="float:left" Icon="plus" OnClick="AddArticle">增加</Button>
+    <Button Danger Style="float:left;margin-left: 10px;display: inline-flex;" Icon="delete" OnClick="MultiDeleteArticle">批量删除</Button>
+    <Button Class="buttonStyle" Style="float:left" Icon="setting" OnClick="ToArticleCategory">商品类别管理</Button>
+    <Search Style="float:right;width:25%" Placeholder="input search text" @bind-Value="@txtValue" EnterButton="true" OnPressEnter="OnSearch" OnSearch="OnSearch" />
+</div>
+
+<div>
+    <AntDesign.Table TItem="ArticleModel"
+                     DataSource="@ArticleModelList"
+                     Total="_total"
+                     @bind-PageIndex="_pageIndex"
+                     @bind-PageSize="_pageSize"
+                     @bind-SelectedRows="selectedRows">
+        <Selection Key="@(context.Code.ToString())" />
+        <Column Title="编号代码" @bind-Field="@context.Code" Sortable />
+        <Column Title="名称" @bind-Field="@context.Name" Sortable />
+        <Column Title="满足金额" @bind-Field="@context.AmountMet" Sortable />
+        <Column Title="价格" @bind-Field="@context.Price" Sortable />
+        <Column Title="类别" @bind-Field="@context.ArticleCategoryName" Sortable />
+        <ActionColumn>
+            <Space>
+                <SpaceItem><Button Class="buttonStyle" OnClick="()=>Modify(context.Code)">修改</Button></SpaceItem>
+            </Space>
+            <Space>
+                <SpaceItem><Button Danger OnClick="()=>Delete(context.Code)">删除</Button></SpaceItem>
+            </Space>
+        </ActionColumn>
+    </AntDesign.Table>
+</div>
+
+
+<br />
+<p> 每页数量: @_pageSize | 总计: @_total</p>
+
+<br />
+<h5>selections:</h5>
+@if (selectedRows != null && selectedRows.Any())
+{
+    <Button Danger Size="small" OnClick="@(e => { selectedRows = null; })">Clear</Button>
+
+    @foreach (var selected in selectedRows)
+    {
+        <Tag @key="selected.Code" Closable OnClose="e=>RemoveSelection(selected.Code)">@selected.Code - @selected.Price</Tag>
+    }
+}
+
+@*<Button OnClick="()=> { _pageIndex--; }">Previous page</Button>
+    <Button OnClick="()=> { _pageIndex++; }">Next Page</Button>*@
+
+@code {
+    [Parameter]
+    public string txtValue { get; set; }
+    private List<ArticleModel> ArticleModelList = new List<ArticleModel>();
+
+    IEnumerable<ArticleModel> selectedRows;
+    int _pageIndex = 1;
+    int _pageSize = 10;
+    int _total = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var articles= await ArticleService.GetArticlesAsync();
+        if (articles == null)
+            return;
+        ArticleModelList = articles.Select(a => new ArticleModel()
+        {
+            Code = a.Code,
+            Name = a.Description,
+            AmountMet=a.AmountMet,
+            Price = a.Price,
+            ArticleCategoryId = a.ArticleCategoryId.ToString(),
+            ArticleCategoryName = a.ArticleCategory.Description
+        }).ToList();
+        if (!string.IsNullOrWhiteSpace(txtValue))
+        {
+            if (ArticleModelList != null)
+            {
+                ArticleModelList = ArticleModelList.Where(a => a.Name.Contains(txtValue) || a.ArticleCategoryName.Contains(txtValue) || a.Code.ToString().Contains(txtValue) || a.Price.ToString().Contains(txtValue)||a.AmountMet.ToString().Contains(txtValue)).ToList();
+            }
+        }
+        _total = ArticleModelList.Count;
+    }
+
+    public void RemoveSelection(int code)
+    {
+        var selected = selectedRows.Where(x => x.Code != code);
+        selectedRows = selected;
+    }
+
+    private async Task Delete(int code)
+    {
+        ArticleModelList = ArticleModelList.Where(x => x.Code != code).ToList();
+        await ArticleService.DeleteArticleByCode(code);
+        _total = ArticleModelList.Count;
+    }
+    private void Modify(int? code)
+    {
+        string navTo = "/articleForm/" + code.ToString();
+        NavigationManager.NavigateTo(navTo.Trim());
+    }
+    private void AddArticle()
+    {
+        NavigationManager.NavigateTo("articleForm");
+    }
+    private async Task MultiDeleteArticle()
+    {
+        if (selectedRows.Count() != 0)
+        {
+            List<int> foodCodes = selectedRows.Select(s => s.Code).ToList();
+            await ArticleService.MultiDeleteArticleByCodes(foodCodes);
+            _total = ArticleModelList.Count;
+            ArticleModelList = ArticleModelList.Where(f => !foodCodes.Contains(f.Code)).ToList();
+        }
+    }
+    public void OnSearch()
+    {
+        NavigationManager.NavigateTo("articles/" + txtValue, true);
+        //await message.Loading($"searching {txtValue}", 2);
+    }
+    public void ToArticleCategory()
+    {
+        NavigationManager.NavigateTo("articleCategories", true);
+    }
+}

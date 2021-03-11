@@ -1,0 +1,90 @@
+﻿@page "/articleCategoryForm"
+@page "/articleCategoryForm/{Id}"
+@using System.Text.Json
+@inject ArticleCategoryService ArticleCategoryService
+    <style>
+        .buttonStyle {
+            display: inline-flex;
+            margin-left: 10px;
+            background-color: #FFC107;
+        }
+    </style>
+<h3 style="margin:20px;">新增类型</h3>
+<div>
+    <Card Bordered="true" Style="width: 70%">
+        <Form Model="@ArticleCategoryModel"
+              OnFinish="OnFinish"
+              OnFinishFailed="OnFinishFailed"
+              LabelCol="new ColLayoutParam { Span=6}"
+              WrapperCol="new ColLayoutParam { Span=12}">
+            <FormItem Label="名称">
+                <Input @bind-Value="@context.Description" />
+            </FormItem>
+            <FormItem WrapperCol="new ColLayoutParam { Offset=6,Span=12}">
+                <AntDesign.Button HtmlType="submit" Class="buttonStyle">
+                    新增
+                </AntDesign.Button>
+            </FormItem>
+        </Form>
+    </Card>
+</div>
+@if (result != null)
+{
+    @if (result.Status == ActionStatus.OK)
+    {
+        <Alert Type="@AlertType.Success"
+               Message="成功"
+               Description="@result.Msg"
+               ShowIcon Closable="true" />
+    }
+    @if (result.Status == ActionStatus.Failed)
+    {
+        <Alert Type="@AlertType.Error"
+               Message="失败"
+               Description="@result.Msg"
+               ShowIcon Closable="true" Style="position:absolute;margin-top:-300px;" OnClose="OnClose" />
+    }
+}
+@code {
+    [Parameter]
+    public string Id { get; set; }
+    private ActionResult result;
+    private bool IsInsert = true;
+    private ArticleCategoryModel ArticleCategoryModel = new ArticleCategoryModel();
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(Id))
+        {
+            var articleCategory = await ArticleCategoryService.GetArticleCategoryByIdAsync(Convert.ToInt32(Id));
+            ArticleCategoryModel.Id = articleCategory.Id;
+            ArticleCategoryModel.Description = articleCategory.Description;
+            IsInsert = false;
+        }
+    }
+    private async Task OnFinish(EditContext editContext)
+    {
+        if (IsInsert)
+        {
+            result = await ArticleCategoryService.InsertArticleCategoryAsync(ArticleCategoryModel);
+        }
+        else
+        {
+            result = await ArticleCategoryService.UpdateArticleCategoryAsync(ArticleCategoryModel);
+        }
+        if (result.Status == ActionStatus.OK)
+        {
+            NavigationManager.NavigateTo("articles");
+        }
+        //Console.WriteLine($"Success:{JsonSerializer.Serialize(Food)}");
+    }
+    private void OnFinishFailed(EditContext editContext)
+    {
+        // Console.WriteLine($"Failed:{JsonSerializer.Serialize(Food)}");
+    }
+    private void OnClose()
+    {
+        result = null;
+    }
+
+}
+

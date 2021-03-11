@@ -1,0 +1,284 @@
+﻿@page "/salesVolume"
+@using AntDesign.Charts
+@using Title = AntDesign.Charts.Title
+@inject TransactionService TransactionService
+@inject CostService CostService
+@inject CommonMethods CommonMethods
+@using System.Net;
+<h3>营业额图表</h3>
+<Tabs ActiveKeyChanged="OnTabChanged">
+    <TabPane Key="1">
+        <Tab>一周内的日营业额柱状图</Tab>
+        <ChildContent>
+            <DatePicker TValue="DateTime?" Picker="@DatePickerType.Week" OnChange="OnChangeDayOfWeek" />
+            <br />
+            <AntDesign.Charts.Column @ref="chart1" Data="_modelsDayOfWeek" Config="config3" />
+        </ChildContent>
+    </TabPane>
+    <TabPane Key="2">
+        <Tab>一月内的日营业额折线图</Tab>
+        <ChildContent>
+            <DatePicker TValue="DateTime?" Picker="@DatePickerType.Month" OnChange="OnChangeDayOfMouth" />
+            <br />
+            <AntDesign.Charts.Line @ref="chart2" Data="_modelsDayOfMouth" Config="config4" />
+        </ChildContent>
+    </TabPane>
+    <TabPane Key="3">
+        <Tab>一年内的月营业额柱状图</Tab>
+        <ChildContent>
+            <DatePicker TValue="DateTime?" Picker="@DatePickerType.Year" OnChange="OnChangeMouthOfYear3" />
+            <br />
+            <AntDesign.Charts.Column @ref="chart3" Data="_modelsMouthOfYear" Config="config3" />
+        </ChildContent>
+    </TabPane>
+    <TabPane Key="4">
+        <Tab>一年内的月营业额折线图</Tab>
+        <ChildContent>
+            <DatePicker TValue="DateTime?" Picker="@DatePickerType.Year" OnChange="OnChangeMouthOfYear4" />
+            <br />
+            <AntDesign.Charts.Line @ref="chart4" Data="_modelsMouthOfYear" Config="config4" />
+        </ChildContent>
+    </TabPane>
+</Tabs>
+<br />
+<h3>成本记录图表</h3>
+<Tabs ActiveKeyChanged="OnTabChanged">
+    <TabPane Key="1">
+        <Tab>一月内的日成本折线图</Tab>
+        <ChildContent>
+            <DatePicker TValue="DateTime?" Picker="@DatePickerType.Month" OnChange="OnChangeCostDayOfMouth" />
+            <br />
+            <AntDesign.Charts.Line @ref="chart5" Data="_modelsCostDayOfMouth" Config="config4" />
+        </ChildContent>
+    </TabPane>
+    <TabPane Key="2">
+        <Tab>一年内的月营业额折线图</Tab>
+        <ChildContent>
+            <DatePicker TValue="DateTime?" Picker="@DatePickerType.Year" OnChange="OnChangeCostMouthOfYear" />
+            <br />
+            <AntDesign.Charts.Line @ref="chart6" Data="_modelsCostMouthOfYear" Config="config4" />
+        </ChildContent>
+    </TabPane>
+    <TabPane Key="3">
+        <Tab>一年内的月营业额/成本 柱状图</Tab>
+        <ChildContent>
+            <DatePicker TValue="DateTime?" Picker="@DatePickerType.Year" OnChange="OnChangeAndCostMouthOfYear" />
+            <br />
+            <GroupedColumn @ref="chart7" Data="_modelsAndCostMouthOfYear" Config="config1" />
+        </ChildContent>
+    </TabPane>
+</Tabs>
+@code {
+    //public  string ActiveKey { get; set; }
+    [Parameter]
+    public string Week { get; set; }
+    static object[] _modelsDayOfWeek;
+    object[] _modelsDayOfMouth;
+    object[] _modelsMouthOfYear;
+    object[] _modelsCostDayOfMouth;
+    object[] _modelsCostMouthOfYear;
+    object[] _modelsAndCostMouthOfYear;
+    IChartComponent chart1;
+    IChartComponent chart2;
+    IChartComponent chart3;
+    IChartComponent chart4;
+    IChartComponent chart5;
+    IChartComponent chart6;
+    IChartComponent chart7;
+    public decimal amountDayOfMouth;
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+    private void OnTabChanged(string activeKey)
+    {
+        //switch (activeKey)
+        //{
+        //    case "1":
+        //        if (chart1 == null)
+        //            break;
+        //        config3.Title.Text = "总营业额: " + getAmount(_modelsDayOfWeek).ToString();
+        //        chart1.UpdateConfig(config3);
+        //        break;
+        //    case "2":
+        //        if (chart2 == null)
+        //            break;
+        //        config4.Title.Text = "总营业额: " + getAmount(_modelsDayOfMouth).ToString();
+        //        chart2.UpdateConfig(config4);
+        //        break;
+        //    case "3":
+        //        if (chart3 == null)
+        //            break;
+        //        config3.Title.Text = "总营业额: " + getAmount(_modelsMouthOfYear).ToString();
+        //        chart3.UpdateConfig(config3);
+        //        break;
+        //    case "4":
+        //        if (chart3 == null)
+        //            break;
+        //        config4.Title.Text = "总营业额: " + getAmount(_modelsMouthOfYear).ToString();
+        //        chart3.UpdateConfig(config4);
+        //        break;
+        //}
+    }
+    #region 一周内的日营业额
+    private void OnChangeDayOfWeek(DateTimeChangedEventArgs args)
+    {
+        _modelsDayOfWeek = TransactionService.GetTransactionDaySalesByWeekOrMouth(args.Date, "week");
+        ChangeDataAndConfig<ColumnConfig>(chart1, _modelsDayOfWeek, config3);
+    }
+    ColumnConfig config3 = new ColumnConfig
+    {
+        Title = new Title
+        {
+            Visible = true,
+            Text = "",
+        },
+        Description = new Description
+        {
+            Visible = true,
+            Text = "",
+        },
+        ForceFit = true,
+        Padding = "auto",
+        XField = "type",
+        YField = "sales",
+        Meta = new
+        {
+            Type = new
+            {
+                Alias = "日期"
+            },
+            Sales = new
+            {
+                Alias = "营业额(元)"
+            }
+        },
+        Label = new ColumnViewConfigLabel
+        {
+            Visible = true,
+            Position = "middle"  // option: middle / top / bottom
+        },
+        Interactions = new Interaction[]
+        {
+            new Interaction
+            {
+                Type = "scrollbar",
+            }
+                    },
+    };
+    LineConfig config4 = new LineConfig
+    {
+        Title = new Title
+        {
+            Visible = true,
+            //Text = "配置折线数据点样式"
+        },
+        Description = new Description
+        {
+            Visible = true,
+            //Text = "自定义配置趋势线上数据点的样式"
+        },
+        Padding = "auto",
+        ForceFit = true,
+        XField = "type",
+        YField = "sales",
+        Label = new Label
+        {
+            Visible = true,
+            Type = "point"
+        },
+        Point = new LineViewConfigPoint
+        {
+            Visible = true,
+            Size = 5,
+            Shape = "diamond",
+            Style = new GraphicStyle
+            {
+                Fill = "white",
+                Stroke = "#2593fc",
+                LineWidth = 2
+            }
+        }
+    };
+    GroupedColumnConfig config1 = new GroupedColumnConfig
+    {
+        Title = new Title
+        {
+            Visible = true,
+            Text = "分组柱状图"
+        },
+        ForceFit = true,
+        XField = "type",
+        YField = "sales",
+        YAxis = new ValueAxis
+        {
+            Min = 0
+        },
+        Label = new ColumnViewConfigLabel
+        {
+            Visible = true
+        },
+        GroupField = "name",
+        Color = new[] { "#1ca9e6", "#f88c24" }
+    };
+    #endregion 一周内的日营业额
+    private void OnChangeDayOfMouth(DateTimeChangedEventArgs args)
+    {
+        _modelsDayOfMouth = TransactionService.GetTransactionDaySalesByWeekOrMouth(args.Date, "mouth");
+        ChangeDataAndConfig<LineConfig>(chart2, _modelsDayOfMouth, config4);
+    }
+    private void OnChangeCostDayOfMouth(DateTimeChangedEventArgs args)
+    {
+        _modelsCostDayOfMouth = CostService.GetCostDaySalesByMouth(args.Date);
+        ChangeDataAndConfig<LineConfig>(chart5, _modelsCostDayOfMouth, config4);
+    }
+
+    private void OnChangeCostMouthOfYear(DateTimeChangedEventArgs args)
+    {
+        _modelsCostMouthOfYear = CostService.GetCostMouthSalesByYear(args.Date.Year);
+        ChangeDataAndConfig<LineConfig>(chart6, _modelsCostMouthOfYear, config4);
+    }
+    private void OnChangeMouthOfYear3(DateTimeChangedEventArgs args)
+    {
+        _modelsMouthOfYear = TransactionService.GetTransactionMouthSalesByYear(args.Date.Year);
+        ChangeDataAndConfig<ColumnConfig>(chart3, _modelsMouthOfYear, config3);
+    }
+    private void OnChangeMouthOfYear4(DateTimeChangedEventArgs args)
+    {
+        _modelsMouthOfYear = TransactionService.GetTransactionMouthSalesByYear(args.Date.Year);
+        ChangeDataAndConfig<LineConfig>(chart4, _modelsMouthOfYear, config4);
+    }
+    private void OnChangeAndCostMouthOfYear(DateTimeChangedEventArgs args)
+    {
+        object[] transaction = TransactionService.GetTransactionMouthSalesByYear(args.Date.Year);
+        object[] cost = CostService.GetCostMouthSalesByYear(args.Date.Year);
+        _modelsAndCostMouthOfYear = new object[transaction.Length + cost.Length];
+        for (int i = 0; i < transaction.Length; i++)
+        {
+            _modelsAndCostMouthOfYear[i] = new { type = ((dynamic)transaction[i]).type, sales = ((dynamic)transaction[i]).sales, name = "transaction" };
+        }
+        for (int i = transaction.Length; i < _modelsAndCostMouthOfYear.Length; i++)
+        {
+            _modelsAndCostMouthOfYear[i] = new { type = ((dynamic)cost[i- transaction.Length]).type, sales = ((dynamic)cost[i - transaction.Length]).sales, name = "cost" };
+        }
+    }
+    public decimal GetAmount(object[] models)
+    {
+        decimal amount = 0;
+        if (models == null)
+            return 0;
+        foreach (var a in models)
+        {
+            //object匿名类的弱类型
+            amount += ((dynamic)a).sales;
+        }
+        return amount;
+    }
+    public void ChangeDataAndConfig<T>(IChartComponent chart, object[] model, T tconfig) where T: IViewConfig, IPlotConfig
+    {
+        tconfig.Title.Text="共："+ GetAmount(model).ToString()+ " 元";
+        chart.ChangeData(model);
+        chart.UpdateConfig(tconfig);
+    }
+}
+
