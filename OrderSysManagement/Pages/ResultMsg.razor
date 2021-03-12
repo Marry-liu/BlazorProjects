@@ -1,5 +1,5 @@
 ﻿@page "/resultMsg"
-@if (Result != null)
+@*@if (Result != null)
 {
     @if (Result.Status == ActionStatus.OK)
     {
@@ -15,11 +15,19 @@
                Description="@Result.Msg"
                ShowIcon Closable="true" Style="position:absolute;margin-top:-300px;" OnClose="OnClose" />
     }
-}
+}*@
+<Modal Title="提示"
+       Visible="@_visible"
+       OnOk="@HandleOk"
+       OnCancel="@HandleCancel">
+    <p>Some contents...</p>
+</Modal>
 
 @code {
     [Parameter]
     public ActionResult Result { get; set; }
+    [Parameter]
+    public bool _visible { get; set; } = false;
 
     public void SetResult(ActionResult result)
     {
@@ -29,5 +37,18 @@
     {
         Result = null;
         //NavigationManager.NavigateTo("")
+    }
+
+
+    private void HandleOk(MouseEventArgs e)
+    {
+        Console.WriteLine(e);
+        _visible = false;
+    }
+
+    private void HandleCancel(MouseEventArgs e)
+    {
+        Console.WriteLine(e);
+        _visible = false;
     }
 }

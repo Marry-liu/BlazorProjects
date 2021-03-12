@@ -328,12 +328,13 @@ using System.Net;
         _modelsAndCostMouthOfYear = new object[transaction.Length + cost.Length];
         for (int i = 0; i < transaction.Length; i++)
         {
-            _modelsAndCostMouthOfYear[i] = new { type = ((dynamic)transaction[i]).type, sales = ((dynamic)transaction[i]).sales, name = "transaction" };
+            _modelsAndCostMouthOfYear[i] = new { type = ((dynamic)transaction[i]).type, sales = ((dynamic)transaction[i]).sales, name = "营业额" };
         }
         for (int i = transaction.Length; i < _modelsAndCostMouthOfYear.Length; i++)
         {
-            _modelsAndCostMouthOfYear[i] = new { type = ((dynamic)cost[i- transaction.Length]).type, sales = ((dynamic)cost[i - transaction.Length]).sales, name = "cost" };
+            _modelsAndCostMouthOfYear[i] = new { type = ((dynamic)cost[i- transaction.Length]).type, sales = ((dynamic)cost[i - transaction.Length]).sales, name = "成本" };
         }
+        ChangeDataAndConfig<GroupedColumnConfig>(chart7, _modelsAndCostMouthOfYear, config1,transaction,cost);
     }
     public decimal GetAmount(object[] models)
     {
@@ -347,9 +348,16 @@ using System.Net;
         }
         return amount;
     }
-    public void ChangeDataAndConfig<T>(IChartComponent chart, object[] model, T tconfig) where T: IViewConfig, IPlotConfig
+    public void ChangeDataAndConfig<T>(IChartComponent chart, object[] model, T tconfig, object[] transaction=null,object[] cost=null) where T: IViewConfig, IPlotConfig
     {
-        tconfig.Title.Text="共："+ GetAmount(model).ToString()+ " 元";
+        if (transaction==null && cost ==null)
+        {
+            tconfig.Title.Text = "共：" + GetAmount(model).ToString() + " 元";
+        }
+        else
+        {
+            tconfig.Title.Text="营业额共："+GetAmount(transaction).ToString()+" 元; "+"成本共："+GetAmount(cost).ToString()+" 元";
+        }
         chart.ChangeData(model);
         chart.UpdateConfig(tconfig);
     }

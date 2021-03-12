@@ -126,7 +126,7 @@ using System.Text;
         }
         #pragma warning restore 1998
 #nullable restore
-#line 75 "C:\Git\BlazorPeojects\OrderSysManagement\Pages\MenuTemplate.razor"
+#line 76 "C:\Git\BlazorPeojects\OrderSysManagement\Pages\MenuTemplate.razor"
        
     [Parameter]
     public string TransNum { get; set; }
@@ -137,7 +137,7 @@ using System.Text;
     private decimal? TotalPriceOfTransation;
     private string Footer;
     int _pageSize = 5;
-    public ResultMsg resultMsg =new ResultMsg();
+    //public ResultMsg resultMsg =new ResultMsg();
     protected override async Task OnInitializedAsync()
     {
         Transaction = TransactionService.transactionList.FirstOrDefault(t => t.TableNum == TransNum);
@@ -173,12 +173,7 @@ using System.Text;
             food.Number = 0;
             if (food.Price < 0 && GetTotalPriceOfTransation() < food.AmountMet)
             {
-
-                resultMsg.SetResult(new ActionResult
-                {
-                    Status = ActionStatus.Failed,
-                    Msg = "金额不满足折扣条件：" + food.Name
-                });
+                CommonMethods.HandleWarning("金额不满足折扣条件：" + food.Name);
                 return;
             }
             Transaction.ArticleModels.Add(food);
@@ -230,6 +225,16 @@ using System.Text;
         var food = Transaction.ArticleModels.First(f => f.Code == code);
         food.Number = food.Number - 1;
         food.TotalPrice = food.Number * food.Price;
+        var discounts = Transaction.ArticleModels.Where(a => a.ArticleCategoryName.Contains("折扣"));
+        foreach (var d in discounts)
+        {
+            if (d.AmountMet > GetTotalPriceOfTransation())
+            {
+                CommonMethods.HandleWarning("金额不满足折扣条件：" + d.Name + "请先取消折扣！");
+                food.Number = food.Number + 1;
+                food.TotalPrice = food.Number * food.Price;
+            }
+        }
         if (food.Number == 0)
         {
             Transaction.ArticleModels.Remove(food);
@@ -267,6 +272,7 @@ using System.Text;
 #line default
 #line hidden
 #nullable disable
+        [global::Microsoft.AspNetCore.Components.InjectAttribute] private CommonMethods CommonMethods { get; set; }
         [global::Microsoft.AspNetCore.Components.InjectAttribute] private PrintJobService PrintJob { get; set; }
         [global::Microsoft.AspNetCore.Components.InjectAttribute] private ArticleCategoryService ArticleCategoryService { get; set; }
         [global::Microsoft.AspNetCore.Components.InjectAttribute] private TransactionService TransactionService { get; set; }

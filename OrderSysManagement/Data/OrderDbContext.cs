@@ -35,6 +35,7 @@ namespace OrderSysManagement.Data
         public DbSet<UserType> UserTypes { get; set; }
         public DbSet<PrintParameter> PrintParameter { get; set; }
         public DbSet<Cost> Costs { get; set; }
+        public DbSet<Member> Members { get; set; }
         /// <summary>
         /// Define the model.
         /// </summary>

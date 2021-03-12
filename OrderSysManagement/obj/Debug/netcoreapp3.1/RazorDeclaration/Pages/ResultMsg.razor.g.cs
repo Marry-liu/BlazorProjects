@@ -119,10 +119,12 @@ using OrderSysManagement.Methods;
         }
         #pragma warning restore 1998
 #nullable restore
-#line 20 "C:\Git\BlazorPeojects\OrderSysManagement\Pages\ResultMsg.razor"
+#line 26 "C:\Git\BlazorPeojects\OrderSysManagement\Pages\ResultMsg.razor"
        
     [Parameter]
     public ActionResult Result { get; set; }
+    [Parameter]
+    public bool _visible { get; set; } = false;
 
     public void SetResult(ActionResult result)
     {
@@ -132,6 +134,19 @@ using OrderSysManagement.Methods;
     {
         Result = null;
         //NavigationManager.NavigateTo("")
+    }
+
+
+    private void HandleOk(MouseEventArgs e)
+    {
+        Console.WriteLine(e);
+        _visible = false;
+    }
+
+    private void HandleCancel(MouseEventArgs e)
+    {
+        Console.WriteLine(e);
+        _visible = false;
     }
 
 #line default

@@ -4,6 +4,7 @@
 @inject TransactionService TransactionService
 @inject ArticleCategoryService ArticleCategoryService
 @inject PrintJobService PrintJob
+@inject CommonMethods CommonMethods
 <style>
     .buttonStyle {
         display: inline-flex;
@@ -43,7 +44,7 @@
             </Table>
         </Body>
     </Card>
-    <ResultMsg Result="resultMsg.Result" @ref="resultMsg" />
+    @*<ResultMsg Result="resultMsg.Result" @ref="resultMsg" />*@
 
     <Button Class="buttonStyle" Size="large" Icon="printer" OnClick="@PrintBill">打印小票</Button>
     <Button Class="buttonStyle" Size="large" Icon="money-collect" OnClick="@CheckOut">结 账</Button>
@@ -82,7 +83,7 @@
     private decimal? TotalPriceOfTransation;
     private string Footer;
     int _pageSize = 5;
-    public ResultMsg resultMsg =new ResultMsg();
+    //public ResultMsg resultMsg =new ResultMsg();
     protected override async Task OnInitializedAsync()
     {
         Transaction = TransactionService.transactionList.FirstOrDefault(t => t.TableNum == TransNum);
@@ -118,12 +119,7 @@
             food.Number = 0;
             if (food.Price < 0 && GetTotalPriceOfTransation() < food.AmountMet)
             {
-
-                resultMsg.SetResult(new ActionResult
-                {
-                    Status = ActionStatus.Failed,
-                    Msg = "金额不满足折扣条件：" + food.Name
-                });
+                CommonMethods.HandleWarning("金额不满足折扣条件：" + food.Name);
                 return;
             }
             Transaction.ArticleModels.Add(food);
@@ -175,6 +171,16 @@
         var food = Transaction.ArticleModels.First(f => f.Code == code);
         food.Number = food.Number - 1;
         food.TotalPrice = food.Number * food.Price;
+        var discounts = Transaction.ArticleModels.Where(a => a.ArticleCategoryName.Contains("折扣"));
+        foreach (var d in discounts)
+        {
+            if (d.AmountMet > GetTotalPriceOfTransation())
+            {
+                CommonMethods.HandleWarning("金额不满足折扣条件：" + d.Name + "请先取消折扣！");
+                food.Number = food.Number + 1;
+                food.TotalPrice = food.Number * food.Price;
+            }
+        }
         if (food.Number == 0)
         {
             Transaction.ArticleModels.Remove(food);
