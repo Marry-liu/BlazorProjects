@@ -192,16 +192,19 @@ using System.Text;
     public void PrintBill()
     {
         StringBuilder sb = new StringBuilder();
-        sb.Append("     餐饮管理系统  \n");
+        sb.Append("     周胖姐螺狮粉（上海店）  \n");
         //40
+        sb.Append("日期：" + DateTime.Now+" \n");
+        sb.Append("小票号：" + Transaction.TransNum.ToString() + " \n");
         sb.Append("****************************************\n");
-        string a = ("商品名").PadRight(20, ' ') + ("价格").PadRight(20, ' ') + "\n";
+        string a = ("商品名").PadRight(10, ' ') + ("价格(元)").PadRight(10, ' ') + "\n";
         sb.Append(a);
         foreach (var f in Transaction.ArticleModels)
         {
-            string text = f.Name.PadRight(20, ' ') + f.Price.ToString().PadRight(20, ' ') + "\n";
+            string text = f.Name.PadRight(10, ' ') + f.Price.ToString().PadRight(10, ' ') + "\n";
             sb.Append(text);
         }
+        sb.Append("总价格：" + Transaction.ArticleModels.Sum(a => a.TotalPrice).ToString() + " \n");
         sb.Append("*************************************\n");
         PrintJob.Print(sb.ToString());
     }
