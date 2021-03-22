@@ -1,0 +1,210 @@
+﻿@inject WiningRecordService WiningRecordService
+@inject PrintJobService PrintJobService
+@using System.Text
+<h3>双色球机选</h3>
+<br />
+<Divider Orientation="left">
+    要机选的个数：
+    <AntDesign.InputNumber @bind-Value="HighProRed.SelectNums" />
+    <Text Style="background-color:#ff6a00"> 红球</Text>
+    高概率5个球：
+    <Text Style="background-color:#ff6a00">@HighProRed.ShowInfo</Text>
+    <Text Style="background-color:#ffd800;font-size:18px;"> |机选:  @HighProRed.RandomSelectedInfo</Text>
+</Divider>
+<Divider Orientation="left">
+    要机选的个数：
+    <AntDesign.InputNumber @bind-Value="MiddleProRed.SelectNums" />
+    <Text Style="background-color:#ff6a00"> 红球</Text>
+    中高概率18个球：
+    <Text Style="background-color:#ff6a00">@MiddleProRed.ShowInfo</Text>
+    <Text Style="background-color:#ffd800;font-size:18px;"> | 机选:  @MiddleProRed.RandomSelectedInfo</Text>
+</Divider>
+<Divider Orientation="left">
+    要机选的个数：
+    <AntDesign.InputNumber @bind-Value="LowProRed.SelectNums" />
+    <Text Style="background-color:#ff6a00"> 红球</Text>
+    低概率10个球：
+    <Text Style="background-color:#ff6a00">@LowProRed.ShowInfo</Text>
+    <Text Style="background-color:#ffd800;font-size:18px;"> | 机选:  @LowProRed.RandomSelectedInfo</Text>
+</Divider>
+<Divider Orientation="left">
+    <Text Style="background-color:#71c8ee"> 蓝球</Text>
+    高概率8个球：
+    <Text Style="background-color:#71c8ee">@HighProBlue.ShowInfo</Text>
+    <Text Style="background-color:#ffd800;font-size:18px;"> | 机选:  @HighProBlue.RandomSelectedInfo</Text>
+</Divider>
+<Divider Orientation="left">
+    <Text Style="background-color:#71c8ee"> 蓝球</Text>
+    低概率8个球：
+    <Text Style="background-color:#71c8ee">@LowProBlue.ShowInfo</Text>
+    <Text Style="background-color:#ffd800;font-size:18px;"> | 机选:  @LowProBlue.RandomSelectedInfo</Text>
+</Divider>
+<Button Style="margin-left:30px;" Type="primary" OnClick="@RandomHighSelection">随机选择</Button>
+<Button Style="margin-left:30px;" Type="primary" OnClick="@AddPrint">加入打印</Button>
+<Button Style="margin-left:10px;" Type="primary" OnClick="@PrintTicket">打印</Button>
+<br />
+@code {
+    public object[] RedModel;
+    public object[] BlueModel;
+    public List<int> HighProRedList = new List<int>();
+    public List<int> MiddleProRedList = new List<int>();
+    public List<int> LowProRedList = new List<int>();
+    public RedBallShowType HighProRed = new RedBallShowType();
+    public RedBallShowType HighProBlue = new RedBallShowType();
+    public RedBallShowType MiddleProRed = new RedBallShowType();
+    public RedBallShowType LowProRed = new RedBallShowType();
+    public RedBallShowType LowProBlue = new RedBallShowType();
+    public List<PrintNumbers> PrintNumbersList = new List<PrintNumbers>();
+    public PrintNumbers randomPrintNumber;
+    protected override async Task OnInitializedAsync()
+    {
+        RedModel = await WiningRecordService.DoubleSelectRedStatistics();
+        BlueModel = await WiningRecordService.DoubleSelectBlueStatistics();
+        for (int i = 0; i < 5; i++)
+        {
+            if (i < 4)
+            {
+                HighProRed.ShowInfo += (((dynamic)RedModel[i]).type).ToString() + " , ";
+            }
+            else
+                HighProRed.ShowInfo += (((dynamic)RedModel[i]).type).ToString();
+            HighProRed.ItemList.Add(((dynamic)RedModel[i]).type);
+        }
+        for (int i = 5; i < 23; i++)
+        {
+            if (i < 22)
+            {
+                MiddleProRed.ShowInfo += (((dynamic)RedModel[i]).type).ToString() + " , ";
+            }
+            else
+                MiddleProRed.ShowInfo += (((dynamic)RedModel[i]).type).ToString();
+            MiddleProRed.ItemList.Add(((dynamic)RedModel[i]).type);
+        }
+        for (int i = 23; i < 33; i++)
+        {
+            if (i < 32)
+            {
+                LowProRed.ShowInfo += (((dynamic)RedModel[i]).type).ToString() + " , ";
+            }
+            else
+                LowProRed.ShowInfo += (((dynamic)RedModel[i]).type).ToString();
+            LowProRed.ItemList.Add(((dynamic)RedModel[i]).type);
+        }
+        for (int i = 0; i < 8; i++)
+        {
+            if (i < 7)
+            {
+                HighProBlue.ShowInfo += (((dynamic)BlueModel[i]).type).ToString() + " , ";
+            }
+            else
+                HighProBlue.ShowInfo += (((dynamic)BlueModel[i]).type).ToString();
+            HighProBlue.ItemList.Add(((dynamic)BlueModel[i]).type);
+        }
+        for (int i = 8; i < 16; i++)
+        {
+            if (i < 15)
+            {
+                LowProBlue.ShowInfo += (((dynamic)BlueModel[i]).type).ToString() + " , ";
+            }
+            else
+                LowProBlue.ShowInfo += (((dynamic)BlueModel[i]).type).ToString();
+            LowProBlue.ItemList.Add(((dynamic)BlueModel[i]).type);
+        }
+        await base.OnInitializedAsync();
+    }
+    public void RandomHighSelection()
+    {
+        HighProRedList = HighProRed.ItemList.GetRange(0, HighProRed.ItemList.Count() - 1);
+        MiddleProRedList = MiddleProRed.ItemList.GetRange(0, MiddleProRed.ItemList.Count() - 1);
+        LowProRedList = LowProRed.ItemList.GetRange(0, LowProRed.ItemList.Count() - 1);
+        Random r = new Random();
+        HighProRed.RandomSelectedInfo = "";
+        MiddleProRed.RandomSelectedInfo = "";
+        LowProRed.RandomSelectedInfo = "";
+        HighProBlue.RandomSelectedInfo = "";
+        LowProBlue.RandomSelectedInfo = "";
+        randomPrintNumber = new PrintNumbers();
+        for (int i = 0; i < HighProRed.SelectNums; i++)
+        {
+            HighProRed.Items = HighProRedList.ToArray();
+            int rand = r.Next(HighProRed.Items.Count());
+            if (i < HighProRed.SelectNums - 1)
+                HighProRed.RandomSelectedInfo += HighProRed.Items[rand].ToString() + " , ";
+            else
+                HighProRed.RandomSelectedInfo += HighProRed.Items[rand].ToString();
+            randomPrintNumber.RedNumNumber.Add(HighProRed.Items[rand]);
+            HighProRedList.Remove(HighProRed.Items[rand]);
+        }
+        for (int i = 0; i < MiddleProRed.SelectNums; i++)
+        {
+            MiddleProRed.Items = MiddleProRedList.ToArray();
+            int rand = r.Next(MiddleProRed.Items.Count());
+            if (i < MiddleProRed.SelectNums - 1)
+            {
+                MiddleProRed.RandomSelectedInfo += MiddleProRed.Items[rand].ToString() + " , ";
+            }
+            else
+                MiddleProRed.RandomSelectedInfo += MiddleProRed.Items[rand].ToString();
+            randomPrintNumber.RedNumNumber.Add(MiddleProRed.Items[rand]);
+            MiddleProRedList.Remove(MiddleProRed.Items[rand]);
+        }
+        for (int i = 0; i < LowProRed.SelectNums; i++)
+        {
+            LowProRed.Items = LowProRedList.ToArray();
+            int rand = r.Next(LowProRed.Items.Count());
+            if (i < LowProRed.SelectNums - 1)
+                LowProRed.RandomSelectedInfo += LowProRed.Items[rand].ToString() + " , ";
+            else
+                LowProRed.RandomSelectedInfo += LowProRed.Items[rand].ToString();
+            randomPrintNumber.RedNumNumber.Add(LowProRed.Items[rand]);
+            LowProRedList.Remove(LowProRed.Items[rand]);
+        }
+        HighProBlue.Items = HighProBlue.ItemList.ToArray();
+        var hr = r.Next(HighProBlue.Items.Count());
+        HighProBlue.RandomSelectedInfo += HighProBlue.Items[hr].ToString();
+        randomPrintNumber.BlueNumNumber.Add(HighProBlue.Items[hr]);
+        LowProBlue.Items = LowProBlue.ItemList.ToArray();
+        var lr = r.Next(LowProBlue.Items.Count());
+        LowProBlue.RandomSelectedInfo += LowProBlue.Items[lr].ToString();
+        randomPrintNumber.BlueNumNumber.Add(LowProBlue.Items[lr]);
+    }
+    public void PrintTicket()
+    {
+        StringBuilder sb = new StringBuilder();
+        int i = 0;
+        foreach (var p in PrintNumbersList)
+        {
+            int[] red = p.RedNumNumber.ToArray();
+            Array.Sort(red);
+            int[] blue = p.BlueNumNumber.ToArray();
+            Array.Sort(blue);
+            sb.Append(string.Format("双色球第{0}注：\n",++i));
+            sb.Append(string.Join(",", red) +" + "+string.Join(" | ", blue));
+            sb.AppendLine();
+        }
+        PrintJobService.Print(sb.ToString());
+    }
+    public void AddPrint()
+    {
+        if(randomPrintNumber!=null)
+            PrintNumbersList.Add(randomPrintNumber);
+    }
+    public class RedBallShowType
+    {
+        public int SelectNums { get; set; }
+        public string ShowInfo { get; set; }
+        public string RandomSelectedInfo { get; set; }
+        public List<int> ItemList { get; set; } = new List<int>();
+        public int[] Items { get; set; }
+    }
+    public class RedBallRandom
+    {
+        public int Number { get; set; }
+        public int Times { get; set; }
+    }
+    public class PrintNumbers
+    {
+        public List<int> RedNumNumber { get; set; } = new List<int>();
+        public List<int> BlueNumNumber { get; set; } = new List<int>();
+    }
+}

@@ -1,0 +1,124 @@
+﻿@using Title = AntDesign.Charts.Title
+@inject WiningRecordService WiningRecordService
+<h3>历史统计图表</h3>
+<Tabs ActiveKeyChanged="OnTabChanged">
+    <TabPane Key="1">
+        <Tab>红球柱状图</Tab>
+        <ChildContent>
+            <AntDesign.Charts.Column @ref="chart1" Data="RedModel" Config="config1" />
+        </ChildContent>
+    </TabPane>
+    <TabPane Key="2">
+        <Tab>蓝球柱状图</Tab>
+        <ChildContent>
+            <AntDesign.Charts.Column @ref="chart2"  Data="BlueModel" Config="config2"   />
+        </ChildContent>
+    </TabPane>
+</Tabs>
+@code {
+    [Parameter]
+    public string  Type { get; set; }
+    public object[] RedModel { get; set; }
+    public object[] BlueModel { get; set; }
+    IChartComponent chart1;
+    IChartComponent chart2;
+    ColumnConfig config1 = new ColumnConfig
+    {
+        Title = new Title
+        {
+            Visible = true,
+            Text = "",
+        },
+        Description = new Description
+        {
+            Visible = true,
+            Text = "",
+        },
+        ForceFit = true,
+        Padding = "auto",
+        XField = "type",
+        YField = "sales",
+        Color= "#ee5b23",
+        Meta = new
+        {
+            Type = new
+            {
+                Alias = "号码"
+            },
+            Sales = new
+            {
+                Alias = "次数"
+            }
+        },
+        Label = new ColumnViewConfigLabel
+        {
+            Visible = true,
+            Position = "middle"  // option: middle / top / bottom
+        },
+        Interactions = new Interaction[]
+       {
+            new Interaction
+            {
+                Type = "scrollbar",
+            }
+    },
+    };
+    ColumnConfig config2 = new ColumnConfig
+    {
+        Title = new Title
+        {
+            Visible = true,
+            Text = "",
+        },
+        Description = new Description
+        {
+            Visible = true,
+            Text = "",
+        },
+        ForceFit = true,
+        Padding = "auto",
+        XField = "type",
+        YField = "sales",
+        Meta = new
+        {
+            Type = new
+            {
+                Alias = "号码"
+            },
+            Sales = new
+            {
+                Alias = "次数"
+            }
+        },
+        Label = new ColumnViewConfigLabel
+        {
+            Visible = true,
+            Position = "middle"  // option: middle / top / bottom
+        },
+        Interactions = new Interaction[]
+       {
+            new Interaction
+            {
+                Type = "scrollbar",
+            }
+    },
+    };
+    protected override async Task OnInitializedAsync()
+    {
+        if (Type == "DoubleBall")
+        {
+            RedModel = await WiningRecordService.DoubleSelectRedStatistics();
+            BlueModel = await WiningRecordService.DoubleSelectBlueStatistics();
+        }
+        if (Type == "BigBall")
+        {
+            RedModel = await WiningRecordService.BigSelectRedStatistics();
+            BlueModel = await WiningRecordService.BigSelectBlueStatistics();
+        }
+        chart1.ChangeData(RedModel);
+        await base.OnInitializedAsync();
+    }
+    private async void OnTabChanged(string activeKey)
+    {
+    }
+}

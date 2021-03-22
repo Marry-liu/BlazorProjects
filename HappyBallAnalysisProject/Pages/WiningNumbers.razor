@@ -1,0 +1,126 @@
+﻿@page "/winingNumbers"
+@using Title = AntDesign.Charts.Title
+@inject WiningRecordService WiningRecordService
+@inject AlertInfoMethod AlertInfoMethod
+<h3>双色球中头奖录入</h3>
+<Divider Orientation="left">红球</Divider>
+@foreach (var buttonType in RedButtonTypes)
+{
+    <Button Style="margin-right:5px;" Type="@buttonType.Type" Danger Shape="circle" OnClick="@(() => FillRed(buttonType))">@buttonType.Num</Button>
+}
+<Divider Orientation="left">蓝球</Divider>
+@foreach (var buttonType in BlueButtonTypes)
+{
+    <Button Style="@buttonType.Style" Type="@buttonType.Type" Shape="circle" OnClick="@(() => FillBlue(buttonType))">@buttonType.Num</Button>
+}
+
+<Divider Orientation="left">期数</Divider>
+<Input Placeholder="双色球期数" Style="width:200px;" @bind-Value="@Period" />
+<Divider Orientation="left">日期</Divider>
+<DatePicker TValue="DateTime" Picker="@DatePickerType.Date" @bind-Value="@Date" />
+<br />
+<br />
+<Button Size="large" Type="primary" OnClick="Recorded">录入</Button>
+<br />
+<br />
+<WiningNumberChart Type="DoubleBall"/>
+<br />
+<br />
+<RandomSelection />
+@code {
+    public object[] RedModel;
+    public object[] BlueModel;
+    public ButtonTypeModel[] RedButtonTypes = new ButtonTypeModel[33];
+    public ButtonTypeModel[] BlueButtonTypes = new ButtonTypeModel[16];
+    public string Period;
+    public DateTime Date = DateTime.Now;
+    public void FillRed(ButtonTypeModel buttonType)
+    {
+        if (buttonType.Type == "primary")
+        {
+            buttonType.Type = "default";
+            return;
+        }
+        var count = RedButtonTypes.Where(b => b.Type == "primary").Count();
+        if (count > 5)
+        {
+            return;
+        }
+        buttonType.Type = "primary";
+    }
+    public void FillBlue(ButtonTypeModel buttonType)
+    {
+        if (buttonType.Type == "primary")
+        {
+            buttonType.Type = "default";
+            buttonType.Style = "margin-right:5px;border-color:dodgerblue;color:dodgerblue";
+            return;
+        }
+        var count = BlueButtonTypes.Where(b => b.Type == "primary").Count();
+        if (count > 0)
+        {
+            return;
+        }
+        buttonType.Type = "primary";
+        buttonType.Style = "margin-right:5px;border-color:dodgerblue;color:white";
+    }
+    public async Task Recorded()
+    {
+        var redNumbers = RedButtonTypes.Where(b => b.Type == "primary").ToArray();
+        if (redNumbers.Length < 6)
+        {
+            //提示
+            AlertInfoMethod.HandleWarning("录入红球不能小于6个");
+            return;
+        }
+        var blueNumber = BlueButtonTypes.Where(b => b.Type == "primary").ToArray();
+        if (blueNumber.Length < 1)
+        {
+            //提示
+            AlertInfoMethod.HandleWarning("录入蓝球不能小于1个");
+            return;
+        }
+        WiningRecordModel model = new WiningRecordModel
+        {
+            Period = Period,
+            Date = Date.Date,
+            RedNumber1 = redNumbers[0].Num,
+            RedNumber2 = redNumbers[1].Num,
+            RedNumber3 = redNumbers[2].Num,
+            RedNumber4 = redNumbers[3].Num,
+            RedNumber5 = redNumbers[4].Num,
+            RedNumber6 = redNumbers[5].Num,
+            BlueNumber = blueNumber.First().Num,
+            TypeId= (int)BallType.DoubleRed
+        };
+        bool succuss = await WiningRecordService.InputRecord(model);
+        if (succuss)
+        {
+            AlertInfoMethod.HandleSuccess("录入成功！");
+            //await WiningRecordService.InputStatistics(redNumbers, blueNumber.First());
+        }
+        else
+            AlertInfoMethod.HandleError("录入失败");
+        NavigationManager.NavigateTo("/winingNumbers",true);
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        for (int i = 0; i < 33; i++)
+        {
+            if (i < 16)
+            {
+                BlueButtonTypes[i] = new ButtonTypeModel
+                {
+                    Num = i + 1,
+                    Style = "margin-right:5px;border-color:dodgerblue;color:dodgerblue",
+                };
+            }
+            RedButtonTypes[i] = new ButtonTypeModel
+            {
+                Num = i + 1,
+            };
+        }
+        //return base.OnInitializedAsync();
+        await base.OnInitializedAsync();
+    }
+}

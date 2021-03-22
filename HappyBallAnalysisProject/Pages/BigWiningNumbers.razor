@@ -1,0 +1,15 @@
+﻿@page "/bigWiningNumbers"
+@using Title = AntDesign.Charts.Title
+@inject WiningRecordService WiningRecordService
+@inject AlertInfoMethod AlertInfoMethod
+<h3>BigWiningNumbers</h3>
+ <WiningNumberChart Type="BigBall"/>
+<BigRandomSelection/>
+@code {
+
+    protected override async Task OnInitializedAsync()
+    {
+        //return base.OnInitializedAsync();
+        await base.OnInitializedAsync();
+    }
+}
